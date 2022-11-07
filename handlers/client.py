@@ -27,13 +27,24 @@ async def add_notification(message: types.Message, state: FSMContext):
     async with state.proxy() as date:
         date['notification'] = message.text
     await FSMClient.next()
-    await message.reply('Через сколько минут тебе напомнить?')
+    await message.reply('Через сколько секунд тебе напомнить?')
 
 # @dp.message_handler(state=FSMClient.times)
 async def add_time(message: types.Message, state: FSMContext):
     async with state.proxy() as date:
-        date['times'] = int(message.text)
-        await message.reply('Время пошло')
+        try:
+            date['times'] = int(message.text)
+            await message.reply('Время пошло')
+        except(TypeError, ValueError):
+            await bot.send_message(chat_id=message.chat.id, text='Напишите целое число')
+            return
+        new_message = await bot.send_message(chat_id=message.chat.id, text=f"Осталось:{date['times']}")
+
+        for seconds_left in range(date['times'] - 1, -1, -1):
+            await asyncio.sleep(1)
+            await new_message.edit_text(text=f"Осталось:{seconds_left}")
+        await message.reply(f"Напоминаю: {date['notification']}")
+
     async def eternity():
         await asyncio.sleep(date['times'])
         await message.reply(date['notification'])
